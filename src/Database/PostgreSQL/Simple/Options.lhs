@@ -1,5 +1,5 @@
 [![Hackage](https://img.shields.io/hackage/v/postgresql-simple-opts.svg)](https://hackage.haskell.org/package/postgresql-simple-opts)
-[![Travis CI Status](https://travis-ci.org/skedgeme/postgresql-simple-opts.svg?branch=master)](http://travis-ci.org/skedgeme/postgresql-simple-opts)
+[![Travis CI Status](https://travis-ci.org/jfischoff/postgresql-simple-opts.svg?branch=master)](http://travis-ci.org/jfischoff/postgresql-simple-opts)
 
 ### Composable Command Line Parsing with `optparse-applicative`
 
