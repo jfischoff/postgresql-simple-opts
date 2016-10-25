@@ -2,7 +2,7 @@
 
 There are many solutions for parsing command line arguments in Haskell. Personally I like [`optparse-applicative`](https://hackage.haskell.org/package/optparse-applicative-0.12.1.0/), because, like the title suggests, you can compose parsers out of smaller pieces.
 
-I have written command line parsers for the database connection info for [`postgresql-simple`](https://hackage.haskell.org/package/postgresql-simple-0.5.2.1/) many times and faced with the prospect of doing it again I opted to make a library. This way I could reuse it in web servers, db migrators, db job runners ... those are all the examples I could think of ... just trust me, it's worth it.
+I have written command line parsers for the database connection info for [`postgresql-simple`](https://hackage.haskell.org/package/postgresql-simple-0.5.2.1/) many times and faced with the prospect of doing it again I opted to make this library, which is also this literate Haskell file. This way I could reuse it in web servers, db migrators, db job runners ... those are all the examples I could think of ... just trust me, it's worth it.
 
 ### Outline
 - [The "Partial" Option Types](#partial)
@@ -36,7 +36,7 @@ import Data.Monoid
 
 ### <a name="partial"> The "Partial" Option Types
 
-In general, options types are built from many optional fields. Additionally, multiple options sets can be combined (e.g. command line options, config file, environment vars, defaults, etc). The easiest way to handle this is to create a "partial" option family that can be monoidally composed and is "completed" with a default option value.
+In general, options types are built from many optional fields. Additionally, multiple options sets can be combined (i.e. command line options, config file, environment vars, defaults, etc). The easiest way to handle this is to create a "partial" option family that can be monoidally composed and is "completed" with a default option value.
 
 ```haskell
 data PartialConnectInfo = PartialConnectInfo
