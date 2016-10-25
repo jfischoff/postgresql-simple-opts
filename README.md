@@ -1,6 +1,6 @@
 ### Composable Command Line Parsing with `optparse-applicative`
 
-There are many solutions for parsing command line arguments in Haskell. Personally I like [`optparse-applicative`](https://hackage.haskell.org/package/optparse-applicative-0.12.1.0/), because, like the title suggests, you can compose parsers out of smaller pieces. 
+There are many solutions for parsing command line arguments in Haskell. Personally I like [`optparse-applicative`](https://hackage.haskell.org/package/optparse-applicative-0.12.1.0/), because, like the title suggests, you can compose parsers out of smaller pieces.
 
 I have written command line parsers for the database connection info for [`postgresql-simple`](https://hackage.haskell.org/package/postgresql-simple-0.5.2.1/) many times and faced with the prospect of doing it again I opted to make a library. This way I could reuse it in web servers, db migrators, db job runners ... those are all the examples I could think of ... just trust me, it's worth it.
 
@@ -200,4 +200,4 @@ run = \case
 
 ### <a name="tests"> The tests
 
-Testing is pretty straightforward using `System.Environment.withArgs`. See the [Spec.hs](/tests/Spec.hs) for examples of how to test the parsers.
+Testing is pretty straightforward using `System.Environment.withArgs`. See the [Spec.hs](/test/Spec.hs) for examples of how to test the parsers.
