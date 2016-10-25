@@ -1,14 +1,14 @@
 name:                postgresql-simple-opts
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            An optparse-applicative parser for postgresql-simple's connection options
 description:         Please see README.md
-homepage:            https://github.com/githubuser/postgresql-simple-opts#readme
+homepage:            https://github.com/jfischoff/postgresql-simple-opts#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2016 Author name here
-category:            Web
+author:              Jonathan Fischoff
+maintainer:          jonathangfischoff@gmail.com
+copyright:           2016 Jonathan Fischoff
+category:            Database
 build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
@@ -42,4 +42,4 @@ test-suite postgresql-simple-opts-test
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/postgresql-simple-opts
+  location: https://github.com/jfischoff/postgresql-simple-opts
