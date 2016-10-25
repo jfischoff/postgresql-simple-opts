@@ -16,6 +16,9 @@ I have written command line parsers for the database connection info for [`postg
 ### Standard Intro Statements to Ignore
 
 ```haskell
+{-| A resuable optparse-applicative parser for creating a postgresql-simple
+   'Connection'  
+|-}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, CPP #-}
 module Database.PostgreSQL.Simple.Options where
@@ -29,7 +32,6 @@ import Options.Generic
 import Data.Typeable
 import Data.String
 #if !MIN_VERSION_base(4,8,0)
-import Control.Applicative
 import Data.Monoid
 #endif
 ```
@@ -39,6 +41,8 @@ import Data.Monoid
 In general, options types are built from many optional fields. Additionally, multiple options sets can be combined (i.e. command line options, config file, environment vars, defaults, etc). The easiest way to handle this is to create a "partial" option family that can be monoidally composed and is "completed" with a default option value.
 
 ```haskell
+-- | An optional version of 'ConnectInfo'. This includes an instance of
+-- | 'ParseRecord' which provides the optparse-applicative Parser.
 data PartialConnectInfo = PartialConnectInfo
   { host     :: Last String
   , port     :: Last Int

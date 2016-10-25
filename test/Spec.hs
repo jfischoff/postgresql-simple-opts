@@ -5,6 +5,9 @@ import Database.PostgreSQL.Simple
 import System.Environment
 import Options.Applicative
 import System.Exit
+#if !MIN_VERSION_base(4,8,0)
+import Data.Monoid
+#endif
 
 testParser :: IO Options
 testParser = execParser $ info completeParser mempty
