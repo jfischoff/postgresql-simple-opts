@@ -7,79 +7,79 @@ import Options.Applicative
 import System.Exit
 
 testParser :: IO Options
-testParser = execParser $ info parser mempty
+testParser = execParser $ info completeParser mempty
 
 main :: IO ()
-main = hspec $ describe "Options Parser" $ do 
-  it "parses all options" $ do 
+main = hspec $ describe "Options Parser" $ do
+  it "parses all options" $ do
     let testArgs = [ "--host=example.com"
                    , "--port=1234"
                    , "--user=nobody"
                    , "--password=everytimeiclosemyeyes"
                    , "--database=future"
                    ]
-    
-        expected = OConnectInfo $ ConnectInfo 
+
+        expected = OConnectInfo $ ConnectInfo
                    { connectHost     = "example.com"
                    , connectPort     = 1234
                    , connectUser     = "nobody"
                    , connectPassword = "everytimeiclosemyeyes"
                    , connectDatabase = "future"
                    }
-                   
+
     actual <- withArgs testArgs testParser
     actual `shouldBe` expected
-  
-  it "parses some and uses defaults for others" $ do 
+
+  it "parses some and uses defaults for others" $ do
     let testArgs = [ "--user=nobody"
                    , "--password=everytimeiclosemyeyes"
                    , "--database=future"
                    ]
-    
-        expected = OConnectInfo $ ConnectInfo 
+
+        expected = OConnectInfo $ ConnectInfo
                    { connectHost     = "127.0.0.1"
                    , connectPort     = 5432
                    , connectUser     = "nobody"
                    , connectPassword = "everytimeiclosemyeyes"
                    , connectDatabase = "future"
                    }
-                   
+
     actual <- withArgs testArgs testParser
     actual `shouldBe` expected
-  
-  it "parses no options and gives defaults" $ do 
-    let expected = OConnectInfo $ ConnectInfo 
+
+  it "parses no options and gives defaults" $ do
+    let expected = OConnectInfo $ ConnectInfo
                    { connectHost     = "127.0.0.1"
                    , connectPort     = 5432
                    , connectUser     = "postgres"
                    , connectPassword = ""
                    , connectDatabase = ""
                    }
-                   
+
     actual <- withArgs [] testParser
     actual `shouldBe` expected
   it "parses the connection string double quoted" $ do
-    let testArgs = ["--connectionString=\"a b\""]
+    let testArgs = ["--connectString=\"a b\""]
         expected = OConnectString "a b"
-                   
+
     actual <- withArgs testArgs testParser
     actual `shouldBe` expected
   it "parses the connection string single quoted" $ do
-    let testArgs = ["--connectionString='a b'"]
+    let testArgs = ["--connectString='a b'"]
         expected = OConnectString "a b"
 
     actual <- withArgs testArgs testParser
     actual `shouldBe` expected
   it "parses the connection string no quotes" $ do
-    let testArgs = ["--connectionString=a_b"]
+    let testArgs = ["--connectString=a_b"]
         expected = OConnectString "a_b"
 
     actual <- withArgs testArgs testParser
     actual `shouldBe` expected
-  it "fails if connectionString and other args are passed" $ do
-    let testArgs = ["--connectionString=a_b", "--port=1234"]
+  it "fails if connectString and other args are passed" $ do
+    let testArgs = ["--connectString=a_b", "--port=1234"]
         handler :: ExitCode -> Bool
         handler (ExitFailure 1) = True
         handler _ = False
-      
+
     shouldThrow (withArgs testArgs testParser) handler
