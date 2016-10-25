@@ -18,7 +18,7 @@ I have written command line parsers for the database connection info for [`postg
 ```haskell
 {-| A resuable optparse-applicative parser for creating a postgresql-simple
    'Connection'  
-|-}
+-}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, CPP #-}
 module Database.PostgreSQL.Simple.Options where
