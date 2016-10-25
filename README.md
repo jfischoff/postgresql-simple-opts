@@ -1,3 +1,6 @@
+[![Hackage](https://img.shields.io/hackage/v/postgresql-simple-opts.svg)](https://hackage.haskell.org/package/postgresql-simple-opts)
+[![Travis CI Status](https://travis-ci.org/skedgeme/postgresql-simple-opts.svg?branch=master)](http://travis-ci.org/skedgeme/postgresql-simple-opts)
+
 ### Composable Command Line Parsing with `optparse-applicative`
 
 There are many solutions for parsing command line arguments in Haskell. Personally I like [`optparse-applicative`](https://hackage.haskell.org/package/optparse-applicative-0.12.1.0/), because, like the title suggests, you can compose parsers out of smaller pieces.
