@@ -132,6 +132,7 @@ instance ParseRecord PartialOptions where
 We can use `PartialOptions` as the type of a field in a larger options record defined elsewhere. When defining this more complicated parser, we reuse the work we did here by calling `parseRecord`. To make it even clearer we create an alias called `parser` so clients will know what to use.
 
 ```haskell
+-- | The main parser to reuse.
 parser :: Parser PartialOptions
 parser = parseRecord
 ```
@@ -183,6 +184,8 @@ completeConnectInfo x = case defaultPartialConnectInfo <> x of
 Completing a `PartialOptions` to get an `Options` follows straightforwardly ... if you've done this a bunch I suppose.
 
 ```haskell
+-- | mappend with 'defaultPartialConnectInfo' if necessary to create all
+--   options
 completeOptions :: PartialOptions -> Options
 completeOptions = \case
   POConnectString   (ConnectString x) -> OConnectString x
@@ -194,6 +197,7 @@ completeOptions = \case
 Parse a `PartialOptions` and then complete it. This is **not** composable but is convient for testing and if you only need a `Option` type
 
 ```haskell
+-- | Useful for testing or if only Options are needed.
 completeParser :: Parser Options
 completeParser = fmap completeOptions parseRecord
 ```
@@ -203,6 +207,7 @@ completeParser = fmap completeOptions parseRecord
 As a convenience, we export the primary use of parsing connection options ... making a connection.
 
 ```haskell
+-- | Create a connection with an 'Option'
 run :: Options -> IO Connection
 run = \case
   OConnectString connString -> connectPostgreSQL connString
