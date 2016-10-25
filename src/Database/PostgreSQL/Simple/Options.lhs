@@ -17,7 +17,7 @@ I have written command line parsers for the database connection info for [`postg
 
 ```haskell
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, CPP #-}
 module Database.PostgreSQL.Simple.Options where
 import Database.PostgreSQL.Simple
 import Options.Applicative
@@ -28,6 +28,9 @@ import GHC.Generics
 import Options.Generic
 import Data.Typeable
 import Data.String
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative
+#endif
 ```
 
 ### <a name="partial"> The "Partial" Option Types
@@ -80,11 +83,11 @@ newtype ConnectString = ConnectString
 I don't like the default option parsing for `String` in `optparse-applicative`. I want something that will escape double quotes, remove single quotes or just use the string unaltered. The function `parseString` does this.
 
 ```haskell
-unSingleQuote :: String -> Maybe String  
+unSingleQuote :: String -> Maybe String
 unSingleQuote (x : xs@(_ : _))
   | x == '\'' && last xs == '\'' = Just $ init xs
   | otherwise                    = Nothing
-unSingleQuote _                  = Nothing  
+unSingleQuote _                  = Nothing
 
 parseString :: String -> Maybe String
 parseString x = readMaybe x <|> unSingleQuote x <|> Just x
