@@ -1,5 +1,5 @@
 name:                postgresql-simple-opts
-version:             0.1.0.1
+version:             0.1.0.2
 synopsis:            An optparse-applicative parser for postgresql-simple's connection options
 description:         This package exports a optparse-applicative parser and type for postgresql-simple's ConnectInfo and connection string.
 homepage:            https://github.com/jfischoff/postgresql-simple-opts#readme
