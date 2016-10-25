@@ -52,7 +52,7 @@ data PartialConnectInfo = PartialConnectInfo
   } deriving (Show, Eq, Read, Ord, Generic, Typeable)
 ```
 
-We will utilize a boilerplate prevention library by Gaberiel Gonzales called [`optparse-generic`](https://hackage.haskell.org/package/optparse-generic-1.1.3) to generate the parser for use from the records field names.
+We will utilize a boilerplate prevention library by Gabriel Gonzalez called [`optparse-generic`](https://hackage.haskell.org/package/optparse-generic-1.1.3) which generates a parser from the record field names.
 
 To create the parser we have to merely declare an instance of `ParseRecord`.
 
@@ -82,7 +82,6 @@ As it so happens there are two ways to create a db connection with `postgresql-s
 newtype ConnectString = ConnectString
   { connectString :: ByteString
   } deriving ( Show, Eq, Read, Ord, Generic, Typeable, IsString )
-
 ```
 
 I don't like the default option parsing for `String` in `optparse-applicative`. I want something that will escape double quotes, remove single quotes or just use the string unaltered. The function `parseString` does this.
