@@ -158,6 +158,7 @@ data Options
 mkLast :: a -> Last a
 mkLast = Last . Just
 
+-- | The 'PartialConnectInfo' version of 'defaultConnectInfo'
 defaultPartialConnectInfo :: PartialConnectInfo
 defaultPartialConnectInfo = PartialConnectInfo
   { host     = mkLast $                connectHost     defaultConnectInfo
