@@ -1,7 +1,7 @@
 name:                postgresql-simple-opts
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            An optparse-applicative parser for postgresql-simple's connection options
-description:         Please see README.md
+description:         This package exports a optparse-applicative parser and type for postgresql-simple's ConnectInfo and connection string.
 homepage:            https://github.com/jfischoff/postgresql-simple-opts#readme
 license:             BSD3
 license-file:        LICENSE
