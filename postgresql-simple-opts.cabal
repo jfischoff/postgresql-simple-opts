@@ -18,10 +18,10 @@ library
   exposed-modules:     Database.PostgreSQL.Simple.Options
   build-depends: base >= 4.6 && < 5
                , postgresql-simple
-               , optparse-applicative
+               , optparse-applicative >=0.11.0 && <0.13
                , bytestring
-               , optparse-generic
-               , markdown-unlit
+               , optparse-generic >= 1.0.1 && <1.2
+               , markdown-unlit >= 0.4.0 && <0.5
   default-language:    Haskell2010
   ghc-options: -pgmL markdown-unlit
                -Wall
