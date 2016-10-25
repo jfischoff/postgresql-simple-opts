@@ -148,13 +148,16 @@ data Options
 `postgresql-simple` provides sensible defaults for `ConnectInfo` via `defaultConnectInfo`. We use these as the defaults when parsing. We create a `PartialConnectInfo` with these defaults.
 
 ```haskell
+mkLast :: a -> Last a
+mkLast = Last . Just
+
 defaultPartialConnectInfo :: PartialConnectInfo
 defaultPartialConnectInfo = PartialConnectInfo
-  { host     = return $                connectHost     defaultConnectInfo
-  , port     = return $ fromIntegral $ connectPort     defaultConnectInfo
-  , user     = return $                connectUser     defaultConnectInfo
-  , password = return $                connectPassword defaultConnectInfo
-  , database = return $                connectDatabase defaultConnectInfo
+  { host     = mkLast $                connectHost     defaultConnectInfo
+  , port     = mkLast $ fromIntegral $ connectPort     defaultConnectInfo
+  , user     = mkLast $                connectUser     defaultConnectInfo
+  , password = mkLast $                connectPassword defaultConnectInfo
+  , database = mkLast $                connectDatabase defaultConnectInfo
   }
 ```
 
