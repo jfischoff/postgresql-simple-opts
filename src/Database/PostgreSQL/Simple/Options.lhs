@@ -20,7 +20,7 @@ I have written command line parsers for [`postgresql-simple's`](https://hackage.
 
 ```haskell
 {-| A resuable optparse-applicative parser for creating a postgresql-simple
-   'Connection'  
+   'Connection'
 -}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, CPP #-}
@@ -34,9 +34,7 @@ import GHC.Generics
 import Options.Generic
 import Data.Typeable
 import Data.String
-#if !MIN_VERSION_base(4,8,0)
 import Data.Monoid
-#endif
 ```
 
 ### <a name="partial"> The "Partial" Option Types
