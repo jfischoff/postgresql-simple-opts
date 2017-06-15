@@ -23,7 +23,7 @@ I have written command line parsers for [`postgresql-simple's`](https://hackage.
    'Connection'
 -}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, CPP, ApplicativeDo #-}
 module Database.PostgreSQL.Simple.Options where
 import Database.PostgreSQL.Simple
 import Options.Applicative
@@ -35,6 +35,8 @@ import Options.Generic
 import Data.Typeable
 import Data.String
 import Data.Monoid
+import Data.Either.Validation
+import Data.Default
 ```
 
 ### <a name="partial"> The "Partial" Option Types
@@ -116,6 +118,14 @@ data PartialOptions
   = POConnectString      ConnectString
   | POPartialConnectInfo PartialConnectInfo
   deriving (Show, Eq, Read, Generic, Typeable)
+
+instance Monoid PartialOptions where
+    mempty = POPartialConnectInfo mempty
+    mappend a b = case (a, b) of
+        (POConnectString x, _) -> POConnectString x
+        (POPartialConnectInfo x, POPartialConnectInfo y) ->
+            POPartialConnectInfo $ x <> y
+        (POPartialConnectInfo _, POConnectString x) -> POConnectString x
 ```
 
 There is one wrinkle. `optparse-generic` treats sum types as "commands". This makes sense as a default, but it is not what we want. We want to choose one record or another based on the non-overlapping flags. This is easy enough to do by hand.
@@ -157,29 +167,37 @@ mkLast :: a -> Last a
 mkLast = Last . Just
 
 -- | The 'PartialConnectInfo' version of 'defaultConnectInfo'
-defaultPartialConnectInfo :: PartialConnectInfo
-defaultPartialConnectInfo = PartialConnectInfo
-  { host     = mkLast $                connectHost     defaultConnectInfo
-  , port     = mkLast $ fromIntegral $ connectPort     defaultConnectInfo
-  , user     = mkLast $                connectUser     defaultConnectInfo
-  , password = mkLast $                connectPassword defaultConnectInfo
-  , database = mkLast $                connectDatabase defaultConnectInfo
-  }
+instance Default PartialConnectInfo where
+    def = PartialConnectInfo
+      { host     = mkLast $                connectHost     defaultConnectInfo
+      , port     = mkLast $ fromIntegral $ connectPort     defaultConnectInfo
+      , user     = mkLast $                connectUser     defaultConnectInfo
+      , password = mkLast $                connectPassword defaultConnectInfo
+      , database = mkLast $                connectDatabase defaultConnectInfo
+      }
+
+instance Default PartialOptions where
+    def = POPartialConnectInfo def
 ```
 
 We can now complete the `PartialConnectInfo` to get a `ConnectInfo`.
 
 ```haskell
-completeConnectInfo :: PartialConnectInfo -> ConnectInfo
-completeConnectInfo x = case defaultPartialConnectInfo <> x of
-  PartialConnectInfo
-    { host     = Last (Just connectHost    )
-    , port     = Last (Just connectPortInt )
-    , user     = Last (Just connectUser    )
-    , password = Last (Just connectPassword)
-    , database = Last (Just connectDatabase)
-    } -> let connectPort = fromIntegral connectPortInt in ConnectInfo {..}
-  _ -> error "Impossible! No options should be required!"
+getOption :: String -> Last a -> Validation [String] a
+getOption optionName = \case
+    Last (Just x) -> pure x
+    Last Nothing  -> Data.Either.Validation.Failure
+        ["Missing " ++ optionName ++ " option"]
+
+completeConnectInfo :: PartialConnectInfo -> Either [String] ConnectInfo
+completeConnectInfo PartialConnectInfo {..} = validationToEither $ do
+  connectHost     <- getOption "host"     host
+  connectPort     <- fromIntegral
+                 <$> getOption "port"     port
+  connectUser     <- getOption "user"     user
+  connectPassword <- getOption "password" password
+  connectDatabase <- getOption "database" database
+  return $ ConnectInfo {..}
 ```
 
 Completing a `PartialOptions` to get an `Options` follows straightforwardly ... if you've done this a bunch I suppose.
@@ -187,10 +205,10 @@ Completing a `PartialOptions` to get an `Options` follows straightforwardly ... 
 ```haskell
 -- | mappend with 'defaultPartialConnectInfo' if necessary to create all
 --   options
-completeOptions :: PartialOptions -> Options
+completeOptions :: PartialOptions -> Either [String] Options
 completeOptions = \case
-  POConnectString   (ConnectString x) -> OConnectString x
-  POPartialConnectInfo x              -> OConnectInfo $ completeConnectInfo x
+  POConnectString   (ConnectString x) -> Right $ OConnectString x
+  POPartialConnectInfo x              -> OConnectInfo <$> completeConnectInfo x
 ```
 
 ### <a name="option-parser"> The Option Parser
@@ -200,7 +218,8 @@ Parse a `PartialOptions` and then complete it. This is **not** composable but is
 ```haskell
 -- | Useful for testing or if only Options are needed.
 completeParser :: Parser Options
-completeParser = fmap completeOptions parseRecord
+completeParser =
+    fmap (either (error . unlines) id . completeOptions . mappend def) parseRecord
 ```
 
 ### <a name="runner"> The Runner
