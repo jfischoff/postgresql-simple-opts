@@ -2,7 +2,7 @@
    'Connection'
 -}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, CPP, ApplicativeDo #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, CPP #-}
 module Database.PostgreSQL.Simple.Options where
 import Database.PostgreSQL.Simple
 import Options.Applicative
@@ -113,13 +113,11 @@ getOption optionName = \case
 
 completeConnectInfo :: PartialConnectInfo -> Either [String] ConnectInfo
 completeConnectInfo PartialConnectInfo {..} = validationToEither $ do
-  connectHost     <- getOption "host"     host
-  connectPort     <- fromIntegral
-                 <$> getOption "port"     port
-  connectUser     <- getOption "user"     user
-  connectPassword <- getOption "password" password
-  connectDatabase <- getOption "database" database
-  return $ ConnectInfo {..}
+  ConnectInfo <$> getOption "host"     host
+              <*> (fromIntegral <$> getOption "port" port)
+              <*> getOption "user"     user
+              <*> getOption "password" password
+              <*> getOption "database" database
 
 -- | mappend with 'defaultPartialConnectInfo' if necessary to create all
 --   options
