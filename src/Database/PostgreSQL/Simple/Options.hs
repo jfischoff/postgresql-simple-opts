@@ -2,24 +2,30 @@
    'Connection'
 -}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, CPP, GADTs, OverloadedStrings #-}
 module Database.PostgreSQL.Simple.Options where
 import Database.PostgreSQL.Simple
 import Options.Applicative
 import Text.Read
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BSC
+import qualified Data.ByteString as BS
 import GHC.Generics
 import Options.Generic
 import Data.Typeable
-import Data.String
 import Data.Monoid
 import Data.Either.Validation
 import Data.Default
+import URI.ByteString as URI
+import Control.Monad
+import Data.List.Split
+import Data.List (intercalate)
 
--- | An optional version of 'ConnectInfo'. This includes an instance of
+type Options = ConnectInfo
+
+-- | An optional version of 'Options'. This includes an instance of
 -- | 'ParseRecord' which provides the optparse-applicative Parser.
-data PartialConnectInfo = PartialConnectInfo
+data PartialOptions = PartialOptions
   { host     :: Last String
   , port     :: Last Int
   , user     :: Last String
@@ -27,23 +33,21 @@ data PartialConnectInfo = PartialConnectInfo
   , database :: Last String
   } deriving (Show, Eq, Read, Ord, Generic, Typeable)
 
-instance ParseRecord PartialConnectInfo
+instance ParseRecord PartialOptions where
+  parseRecord = (option (eitherReader parseConnectionString) (long "connectString"))
+    <|> parseRecordWithModifiers defaultModifiers
 
-instance Monoid PartialConnectInfo where
-  mempty = PartialConnectInfo (Last Nothing) (Last Nothing)
+instance Monoid PartialOptions where
+  mempty = PartialOptions (Last Nothing) (Last Nothing)
                               (Last Nothing) (Last Nothing)
                               (Last Nothing)
-  mappend x y = PartialConnectInfo
+  mappend x y = PartialOptions
     { host     = host     x <> host     y
     , port     = port     x <> port     y
     , user     = user     x <> user     y
     , password = password x <> password y
     , database = database x <> database y
     }
-
-newtype ConnectString = ConnectString
-  { connectString :: ByteString
-  } deriving ( Show, Eq, Read, Ord, Generic, Typeable, IsString )
 
 unSingleQuote :: String -> Maybe String
 unSingleQuote (x : xs@(_ : _))
@@ -54,47 +58,12 @@ unSingleQuote _                  = Nothing
 parseString :: String -> Maybe String
 parseString x = readMaybe x <|> unSingleQuote x <|> Just x
 
-instance ParseRecord ConnectString where
-  parseRecord =  fmap (ConnectString . BSC.pack)
-              $  option ( eitherReader
-                        $ maybe (Left "Impossible!") Right
-                        . parseString
-                        )
-                        (long "connectString")
-
-data PartialOptions
-  = POConnectString      ConnectString
-  | POPartialConnectInfo PartialConnectInfo
-  deriving (Show, Eq, Read, Generic, Typeable)
-
-instance Monoid PartialOptions where
-    mempty = POPartialConnectInfo mempty
-    mappend a b = case (a, b) of
-        (POConnectString x, _) -> POConnectString x
-        (POPartialConnectInfo x, POPartialConnectInfo y) ->
-            POPartialConnectInfo $ x <> y
-        (POPartialConnectInfo _, POConnectString x) -> POConnectString x
-
-instance ParseRecord PartialOptions where
-  parseRecord
-    =  fmap POConnectString      parseRecord
-   <|> fmap POPartialConnectInfo parseRecord
-
--- | The main parser to reuse.
-parser :: Parser PartialOptions
-parser = parseRecord
-
-data Options
-  = OConnectString ByteString
-  | OConnectInfo   ConnectInfo
-  deriving (Show, Eq, Read, Generic, Typeable)
-
 mkLast :: a -> Last a
 mkLast = Last . Just
 
--- | The 'PartialConnectInfo' version of 'defaultConnectInfo'
-instance Default PartialConnectInfo where
-    def = PartialConnectInfo
+-- | The 'PartialOptions' version of 'defaultOptions'
+instance Default PartialOptions where
+    def = PartialOptions
       { host     = mkLast $                connectHost     defaultConnectInfo
       , port     = mkLast $ fromIntegral $ connectPort     defaultConnectInfo
       , user     = mkLast $                connectUser     defaultConnectInfo
@@ -102,29 +71,20 @@ instance Default PartialConnectInfo where
       , database = mkLast $                connectDatabase defaultConnectInfo
       }
 
-instance Default PartialOptions where
-    def = POPartialConnectInfo def
-
 getOption :: String -> Last a -> Validation [String] a
 getOption optionName = \case
     Last (Just x) -> pure x
     Last Nothing  -> Data.Either.Validation.Failure
         ["Missing " ++ optionName ++ " option"]
 
-completeConnectInfo :: PartialConnectInfo -> Either [String] ConnectInfo
-completeConnectInfo PartialConnectInfo {..} = validationToEither $ do
+completeOptions :: PartialOptions -> Either [String] Options
+completeOptions PartialOptions {..} = validationToEither $ do
   ConnectInfo <$> getOption "host"     host
               <*> (fromIntegral <$> getOption "port" port)
               <*> getOption "user"     user
               <*> getOption "password" password
               <*> getOption "database" database
 
--- | mappend with 'defaultPartialConnectInfo' if necessary to create all
---   options
-completeOptions :: PartialOptions -> Either [String] Options
-completeOptions = \case
-  POConnectString   (ConnectString x) -> Right $ OConnectString x
-  POPartialConnectInfo x              -> OConnectInfo <$> completeConnectInfo x
 
 -- | Useful for testing or if only Options are needed.
 completeParser :: Parser Options
@@ -133,6 +93,61 @@ completeParser =
 
 -- | Create a connection with an 'Option'
 run :: Options -> IO Connection
-run = \case
-  OConnectString connString -> connectPostgreSQL connString
-  OConnectInfo   connInfo   -> connect           connInfo
+run = connect
+
+userInfoToPartialOptions :: UserInfo -> PartialOptions
+userInfoToPartialOptions UserInfo {..} = mempty { user = return $ BSC.unpack uiUsername } <> if BS.null uiPassword
+  then mempty
+  else mempty { password = return $ BSC.unpack uiPassword }
+
+autorityToPartialOptions :: Authority -> PartialOptions
+autorityToPartialOptions Authority {..} = maybe mempty userInfoToPartialOptions authorityUserInfo <>
+  mempty { host = return $ BSC.unpack $ hostBS authorityHost } <>
+  maybe mempty (\p -> mempty { port = return $ portNumber p }) authorityPort
+
+pathToPartialOptions :: ByteString -> PartialOptions
+pathToPartialOptions path = case drop 1 $ BSC.unpack path of
+  "" -> mempty
+  x  -> mempty {database = return x }
+
+keywordToPartialOptions :: String -> String -> Either String PartialOptions
+keywordToPartialOptions k v = case k of
+  "host" -> return $ mempty { host = return $ v }
+  "port" -> do
+    portValue <- maybe (Left ("port value of: " <> v <> " is not a number")) Right $
+      readMaybe v
+
+    return $ mempty { port = return portValue }
+  "user" -> return $ mempty { user = return v }
+  "password" -> return $ mempty { password = return v }
+  "dbname" -> return $ mempty { database = return v}
+  x -> Left $ "Unrecongnized option: " ++ show x
+
+queryToPartialOptions :: URI.Query -> Either String PartialOptions
+queryToPartialOptions Query {..} = foldM (\acc (k, v) -> fmap (mappend acc) $ keywordToPartialOptions (BSC.unpack k) $ BSC.unpack v) mempty queryPairs
+
+uriToOptions :: URIRef Absolute -> Either String PartialOptions
+uriToOptions URI {..} = case schemeBS uriScheme of
+  "postgresql" -> do
+    queryParts <- queryToPartialOptions uriQuery
+    return $ maybe mempty autorityToPartialOptions uriAuthority <>
+      pathToPartialOptions uriPath <> queryParts
+
+  x -> Left $ "Wrong protocol. Expected \"postgresql\" but got: " ++ show x
+
+parseURIStr :: String -> Either String (URIRef Absolute)
+parseURIStr = left show . parseURI strictURIParserOptions . BSC.pack where
+  left f = \case
+    Left x -> Left $ f x
+    Right x -> Right x
+
+parseKeywords :: String -> Either String PartialOptions
+parseKeywords [] = Left "Failed to parse keywords"
+parseKeywords x = fmap mconcat . mapM (uncurry keywordToPartialOptions <=< toTuple . splitOn "=") $ words x where
+  toTuple [k, v] = return (k, v)
+  toTuple xs = Left $ "invalid opts:" ++ show (intercalate "=" xs)
+
+parseConnectionString :: String -> Either String PartialOptions
+parseConnectionString url = do
+  url' <- maybe (Left "failed to parse as string") Right $ parseString url
+  parseKeywords url' <|> (uriToOptions =<< parseURIStr url')
