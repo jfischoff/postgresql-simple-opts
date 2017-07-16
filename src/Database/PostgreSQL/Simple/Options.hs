@@ -151,3 +151,12 @@ parseConnectionString :: String -> Either String PartialOptions
 parseConnectionString url = do
   url' <- maybe (Left "failed to parse as string") Right $ parseString url
   parseKeywords url' <|> (uriToOptions =<< parseURIStr url')
+
+toArgs :: ConnectInfo -> [String]
+toArgs ConnectInfo {..} =
+  [ "--dbname=" <> connectDatabase
+  , "--username=" <> connectUser
+  , "--port=" <> show connectPort
+  , "--password=" <> connectPassword
+  , "--host=" <> connectHost
+  ]
