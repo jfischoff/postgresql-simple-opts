@@ -28,9 +28,9 @@ import Data.Maybe
 data Options = Options
   { oHost                    :: Maybe String
   , oHostaddr                :: Maybe String
-  , oPort                    :: Int
-  , oUser                    :: String
-  , oPassword                :: String
+  , oPort                    :: Maybe Int
+  , oUser                    :: Maybe String
+  , oPassword                :: Maybe String
   , oDbname                  :: String
   , oConnectTimeout          :: Maybe Int
   , oClientEncoding          :: Maybe String
@@ -130,9 +130,9 @@ completeOptions :: PartialOptions -> Either [String] Options
 completeOptions PartialOptions {..} = validationToEither $ do
   Options <$> getLast' host
           <*> getLast' hostaddr
-          <*> (fromIntegral <$> getOption "port" port)
-          <*> getOption "user"     user
-          <*> getOption "password" password
+          <*> (fmap fromIntegral <$> getLast' port)
+          <*> getLast' user
+          <*> getLast' password
           <*> getOption "dbname" dbname
           <*> getLast' connectTimeout
           <*> getLast' clientEncoding
@@ -162,11 +162,11 @@ toConnectionString :: Options -> ByteString
 toConnectionString Options {..} = BSC.pack $ unwords $ map (\(k, v) -> k <> "=" <> v)
   $  maybeToPairStr "host" oHost
   <> maybeToPairStr "hostaddr" oHostaddr
-  <> [ ("port", show oPort)
-     , ("user", oUser)
-     , ("password", oPassword)
-     , ("dbname", oDbname)
+  <> [ ("dbname", oDbname)
      ]
+  <> maybeToPair "port" oPort
+  <> maybeToPairStr "password" oPassword
+  <> maybeToPairStr "user" oUser
   <> maybeToPair "connect_timeout" oConnectTimeout
   <> maybeToPairStr "client_encoding" oClientEncoding
   <> maybeToPairStr "options" oOptions
@@ -288,9 +288,9 @@ parseConnectionString url = do
 toArgs :: Options -> [String]
 toArgs Options {..} =
   [ "--dbname=" <> oDbname
-  , "--username=" <> oUser
-  , "--port=" <> show oPort
-  , "--password=" <> oPassword
-  ] ++
-  (("--host=" <>) <$> maybeToList oHost)
+  ]
+  ++ (("--host=" <>) <$> maybeToList oHost)
+  ++ (("--username=" <>) <$> maybeToList oUser)
+  ++ (("--password=" <>) <$> maybeToList oPassword)
+  ++ ((\x -> "--host=" <> show x) <$> maybeToList oPort)
 
