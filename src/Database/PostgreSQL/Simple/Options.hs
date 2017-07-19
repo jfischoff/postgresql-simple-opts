@@ -152,35 +152,38 @@ completeOptions PartialOptions {..} = validationToEither $ do
           <*> getLast' gsslib
           <*> getLast' service
 
+maybeToPairStr :: String -> Maybe String -> [(String, String)]
+maybeToPairStr k mv = (\v -> (k, v)) <$> maybeToList mv
+
 maybeToPair :: Show a => String -> Maybe a -> [(String, String)]
 maybeToPair k mv = (\v -> (k, show v)) <$> maybeToList mv
 
 toConnectionString :: Options -> ByteString
 toConnectionString Options {..} = BSC.pack $ unwords $ map (\(k, v) -> k <> "=" <> v)
-  $  maybeToPair "host" oHost
-  <> maybeToPair "hostaddr" oHostaddr
+  $  maybeToPairStr "host" oHost
+  <> maybeToPairStr "hostaddr" oHostaddr
   <> [ ("port", show oPort)
      , ("user", oUser)
      , ("password", oPassword)
      , ("dbname", oDbname)
      ]
   <> maybeToPair "connect_timeout" oConnectTimeout
-  <> maybeToPair "client_encoding" oClientEncoding
-  <> maybeToPair "options" oOptions
-  <> maybeToPair "fallback_applicationName" oFallbackApplicationName
+  <> maybeToPairStr "client_encoding" oClientEncoding
+  <> maybeToPairStr "options" oOptions
+  <> maybeToPairStr "fallback_applicationName" oFallbackApplicationName
   <> maybeToPair "keepalives" oKeepalives
   <> maybeToPair "keepalives_idle" oKeepalivesIdle
   <> maybeToPair "keepalives_count" oKeepalivesCount
-  <> maybeToPair "sslmode" oSslmode
+  <> maybeToPairStr "sslmode" oSslmode
   <> maybeToPair "requiressl" oRequiressl
   <> maybeToPair "sslcompression" oSslcompression
-  <> maybeToPair "sslcert" oSslcert
-  <> maybeToPair "sslkey" oSslkey
-  <> maybeToPair "sslrootcert" oSslrootcert
-  <> maybeToPair "requirepeer" oRequirepeer
-  <> maybeToPair "krbsrvname" oKrbsrvname
-  <> maybeToPair "gsslib" oGsslib
-  <> maybeToPair "service" oService
+  <> maybeToPairStr "sslcert" oSslcert
+  <> maybeToPairStr "sslkey" oSslkey
+  <> maybeToPairStr "sslrootcert" oSslrootcert
+  <> maybeToPairStr "requirepeer" oRequirepeer
+  <> maybeToPairStr "krbsrvname" oKrbsrvname
+  <> maybeToPairStr "gsslib" oGsslib
+  <> maybeToPairStr "service" oService
 
 
 -- | Useful for testing or if only Options are needed.
