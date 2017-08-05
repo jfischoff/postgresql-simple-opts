@@ -88,7 +88,7 @@ instance Monoid PartialOptions where
 
 -- Copied from Options.Generic source code
 underscoreModifiers :: Modifiers
-underscoreModifiers = Modifiers lispCase lispCase
+underscoreModifiers = Modifiers lispCase lispCase (const Nothing)
   where
     lispCase = dropWhile (== '_') . (>>= lower) . dropWhile (== '_')
     lower c | isUpper c = ['_', toLower c]
