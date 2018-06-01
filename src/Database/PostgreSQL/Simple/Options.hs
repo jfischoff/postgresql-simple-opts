@@ -50,6 +50,33 @@ data Options = Options
   , oGsslib                  :: Maybe String
   , oService                 :: Maybe String
   } deriving (Show, Eq, Read, Ord, Generic, Typeable)
+
+instance Default Options where
+  def = Options
+    { oHost     = Just $                connectHost     defaultConnectInfo
+    , oPort     = Just $ fromIntegral $ connectPort     defaultConnectInfo
+    , oUser     = Just $                connectUser     defaultConnectInfo
+    , oPassword = Just $                connectPassword defaultConnectInfo
+    , oDbname   =                       connectDatabase defaultConnectInfo
+    , oHostaddr                 = Nothing
+    , oConnectTimeout           = Nothing
+    , oClientEncoding           = Nothing
+    , oOptions                  = Nothing
+    , oFallbackApplicationName  = Nothing
+    , oKeepalives               = Nothing
+    , oKeepalivesIdle           = Nothing
+    , oKeepalivesCount          = Nothing
+    , oSslmode                  = Nothing
+    , oRequiressl               = Nothing
+    , oSslcompression           = Nothing
+    , oSslcert                  = Nothing
+    , oSslkey                   = Nothing
+    , oSslrootcert              = Nothing
+    , oRequirepeer              = Nothing
+    , oKrbsrvname               = Nothing
+    , oGsslib                   = Nothing
+    , oService                  = Nothing
+    }
 -- | An optional version of 'Options'. This includes an instance of
 -- | 'ParseRecord' which provides the optparse-applicative Parser.
 data PartialOptions = PartialOptions
@@ -110,11 +137,11 @@ mkLast = Last . Just
 -- | The 'PartialOptions' version of 'defaultOptions'
 instance Default PartialOptions where
     def = mempty
-      { host     = mkLast $                connectHost     defaultConnectInfo
-      , port     = mkLast $ fromIntegral $ connectPort     defaultConnectInfo
-      , user     = mkLast $                connectUser     defaultConnectInfo
-      , password = mkLast $                connectPassword defaultConnectInfo
-      , dbname = mkLast $                  connectDatabase defaultConnectInfo
+      { host     = Last   $ oHost     def
+      , port     = Last   $ oPort     def
+      , user     = Last   $ oUser     def
+      , password = Last   $ oPassword def
+      , dbname   = mkLast $ oDbname   def
       }
 
 getOption :: String -> Last a -> Validation [String] a
