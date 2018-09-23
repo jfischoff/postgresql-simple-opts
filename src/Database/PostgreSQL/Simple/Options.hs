@@ -14,7 +14,6 @@ import qualified Data.ByteString as BS
 import GHC.Generics
 import Options.Generic
 import Data.Typeable
-import Data.Monoid
 import Data.Either.Validation
 import Data.Default
 import URI.ByteString as URI
@@ -82,9 +81,12 @@ instance ParseRecord PartialOptions where
   parseRecord = (option (eitherReader parseConnectionString) (long "connectString"))
     <|> parseRecordWithModifiers defaultModifiers
 
+instance Semigroup PartialOptions where
+  (<>) = gmappenddefault
+
 instance Monoid PartialOptions where
   mempty = gmemptydefault
-  mappend = gmappenddefault
+  mappend = (<>)
 
 -- Copied from Options.Generic source code
 underscoreModifiers :: Modifiers
