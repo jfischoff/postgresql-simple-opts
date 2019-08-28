@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Database.PostgreSQL.Simple.Options
+  exposed-modules:     Database.PostgreSQL.Simple.PartialOptions
   build-depends: base >= 4.6 && < 5
                , postgresql-simple
                , optparse-applicative
@@ -26,6 +26,7 @@ library
                , split
                , uri-bytestring
                , generic-deriving
+               , postgres-options
   default-language:    Haskell2010
   ghc-options: -Wall
                -fno-warn-unused-do-bind
@@ -41,6 +42,7 @@ test-suite postgresql-simple-opts-test
                      , optparse-applicative
                      , bytestring
                      , data-default
+                     , postgres-options
   ghc-options: -Wall
                -fno-warn-unused-do-bind
                -threaded

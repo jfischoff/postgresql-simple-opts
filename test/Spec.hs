@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 import Test.Hspec
-import Database.PostgreSQL.Simple.Options
+import Database.PostgreSQL.Simple.PartialOptions
 import System.Environment
 import Options.Applicative
 import System.Exit

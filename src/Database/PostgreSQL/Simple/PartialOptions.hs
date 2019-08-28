@@ -2,53 +2,30 @@
    'Connection'
 -}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, CPP, GADTs, OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
-module Database.PostgreSQL.Simple.Options where
-import Database.PostgreSQL.Simple
-import Options.Applicative
-import Text.Read
-import Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as BSC
-import qualified Data.ByteString as BS
-import GHC.Generics
-import Options.Generic
-import Data.Typeable
-import Data.Either.Validation
-import Data.Default
-import URI.ByteString as URI
-import Control.Monad
-import Data.List.Split
-import Data.List (intercalate)
-import Generics.Deriving.Monoid
-import Data.Char
-import Data.Maybe
+{-# LANGUAGE CPP, GADTs, OverloadedStrings #-}
 
-data Options = Options
-  { oHost                    :: Maybe String
-  , oHostaddr                :: Maybe String
-  , oPort                    :: Maybe Int
-  , oUser                    :: Maybe String
-  , oPassword                :: Maybe String
-  , oDbname                  :: String
-  , oConnectTimeout          :: Maybe Int
-  , oClientEncoding          :: Maybe String
-  , oOptions                 :: Maybe String
-  , oFallbackApplicationName :: Maybe String
-  , oKeepalives              :: Maybe Int
-  , oKeepalivesIdle          :: Maybe Int
-  , oKeepalivesCount         :: Maybe Int
-  , oSslmode                 :: Maybe String
-  , oRequiressl              :: Maybe Int
-  , oSslcompression          :: Maybe Int
-  , oSslcert                 :: Maybe String
-  , oSslkey                  :: Maybe String
-  , oSslrootcert             :: Maybe String
-  , oRequirepeer             :: Maybe String
-  , oKrbsrvname              :: Maybe String
-  , oGsslib                  :: Maybe String
-  , oService                 :: Maybe String
-  } deriving (Show, Eq, Read, Ord, Generic, Typeable)
+module Database.PostgreSQL.Simple.PartialOptions where
+
+import Control.Monad ((<=<), foldM)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BSC
+import Data.Char (isUpper, toLower)
+import Data.Default (Default(..))
+import qualified Data.Either.Validation as DEV
+import Data.Either.Validation (Validation(..), validationToEither)
+import Data.List (intercalate)
+import Data.List.Split (splitOn)
+import Data.Typeable (Typeable)
+import Database.PostgreSQL.Simple (ConnectInfo(..), Connection, connectPostgreSQL, defaultConnectInfo)
+import Database.PostgreSQL.Simple.Options (Options(..), toConnectionString)
+import GHC.Generics (Generic)
+import Generics.Deriving.Monoid (Last(..), gmappenddefault, gmemptydefault)
+import Options.Applicative (Parser, (<|>), eitherReader, long, option)
+import Options.Generic (Modifiers(..), ParseRecord(..), defaultModifiers, parseRecordWithModifiers)
+import Text.Read (readMaybe)
+import URI.ByteString as URI
+
 -- | An optional version of 'Options'. This includes an instance of
 -- | 'ParseRecord' which provides the optparse-applicative Parser.
 data PartialOptions = PartialOptions
@@ -78,7 +55,7 @@ data PartialOptions = PartialOptions
   } deriving (Show, Eq, Read, Ord, Generic, Typeable)
 
 instance ParseRecord PartialOptions where
-  parseRecord = (option (eitherReader parseConnectionString) (long "connectString"))
+  parseRecord = option (eitherReader parseConnectionString) (long "connectString")
     <|> parseRecordWithModifiers defaultModifiers
 
 instance Semigroup PartialOptions where
@@ -122,14 +99,13 @@ instance Default PartialOptions where
 getOption :: String -> Last a -> Validation [String] a
 getOption optionName = \case
     Last (Just x) -> pure x
-    Last Nothing  -> Data.Either.Validation.Failure
-        ["Missing " ++ optionName ++ " option"]
+    Last Nothing  -> DEV.Failure ["Missing " ++ optionName ++ " option"]
 
 getLast' :: Applicative f => Last a -> f (Maybe a)
 getLast' = pure . getLast
 
 completeOptions :: PartialOptions -> Either [String] Options
-completeOptions PartialOptions {..} = validationToEither $ do
+completeOptions PartialOptions {..} = validationToEither $
   Options <$> getLast' host
           <*> getLast' hostaddr
           <*> (fmap fromIntegral <$> getLast' port)
@@ -153,40 +129,6 @@ completeOptions PartialOptions {..} = validationToEither $ do
           <*> getLast' krbsrvname
           <*> getLast' gsslib
           <*> getLast' service
-
-maybeToPairStr :: String -> Maybe String -> [(String, String)]
-maybeToPairStr k mv = (\v -> (k, v)) <$> maybeToList mv
-
-maybeToPair :: Show a => String -> Maybe a -> [(String, String)]
-maybeToPair k mv = (\v -> (k, show v)) <$> maybeToList mv
-
-toConnectionString :: Options -> ByteString
-toConnectionString Options {..} = BSC.pack $ unwords $ map (\(k, v) -> k <> "=" <> v)
-  $  maybeToPairStr "host" oHost
-  <> maybeToPairStr "hostaddr" oHostaddr
-  <> [ ("dbname", oDbname)
-     ]
-  <> maybeToPair "port" oPort
-  <> maybeToPairStr "password" oPassword
-  <> maybeToPairStr "user" oUser
-  <> maybeToPair "connect_timeout" oConnectTimeout
-  <> maybeToPairStr "client_encoding" oClientEncoding
-  <> maybeToPairStr "options" oOptions
-  <> maybeToPairStr "fallback_applicationName" oFallbackApplicationName
-  <> maybeToPair "keepalives" oKeepalives
-  <> maybeToPair "keepalives_idle" oKeepalivesIdle
-  <> maybeToPair "keepalives_count" oKeepalivesCount
-  <> maybeToPairStr "sslmode" oSslmode
-  <> maybeToPair "requiressl" oRequiressl
-  <> maybeToPair "sslcompression" oSslcompression
-  <> maybeToPairStr "sslcert" oSslcert
-  <> maybeToPairStr "sslkey" oSslkey
-  <> maybeToPairStr "sslrootcert" oSslrootcert
-  <> maybeToPairStr "requirepeer" oRequirepeer
-  <> maybeToPairStr "krbsrvname" oKrbsrvname
-  <> maybeToPairStr "gsslib" oGsslib
-  <> maybeToPairStr "service" oService
-
 
 -- | Useful for testing or if only Options are needed.
 completeParser :: Parser Options
@@ -218,8 +160,8 @@ parseInt msg v = maybe (Left (msg <> " value of: " <> v <> " is not a number")) 
 
 keywordToPartialOptions :: String -> String -> Either String PartialOptions
 keywordToPartialOptions k v = case k of
-  "host" -> return $ mempty { host = return $ v }
-  "hostaddress" -> return $ mempty { hostaddr = return $ v }
+  "host" -> return $ mempty { host = return v }
+  "hostaddress" -> return $ mempty { hostaddr = return v }
   "port" -> do
     portValue <- parseInt "port" v
     return $ mempty { port = return portValue }
@@ -286,13 +228,3 @@ parseConnectionString :: String -> Either String PartialOptions
 parseConnectionString url = do
   url' <- maybe (Left "failed to parse as string") Right $ parseString url
   parseKeywords url' <|> (uriToOptions =<< parseURIStr url')
-
-toArgs :: Options -> [String]
-toArgs Options {..} =
-  [ "--dbname=" <> oDbname
-  ]
-  ++ (("--host=" <>) <$> maybeToList oHost)
-  ++ (("--username=" <>) <$> maybeToList oUser)
-  ++ (("--password=" <>) <$> maybeToList oPassword)
-  ++ ((\x -> "--host=" <> show x) <$> maybeToList oPort)
-
