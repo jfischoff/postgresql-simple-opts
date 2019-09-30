@@ -6,15 +6,130 @@ import System.Environment
 import Options.Applicative
 import System.Exit
 import Data.Default
-#if !MIN_VERSION_base(4,8,0)
-import Data.Monoid
-#endif
+import qualified System.Envy as E
+import qualified Data.Map as Map
 
 testParser :: IO Options
 testParser = execParser $ info completeParser mempty
 
 main :: IO ()
 main = hspec $ do
+  describe "Env Parser" $ do
+    it "parses all options" $ do
+      mapM_ (uncurry setEnv)
+        [ ("PGHOST"           , "localhost")
+        , ("PGHOSTADDR"       , "127.0.0.1")
+        , ("PGPORT"           , "1234")
+        , ("PGUSER"           , "postgres")
+        , ("PGPASSWORD"       , "postgres")
+        , ("PGDATABASE"       , "temp1")
+        , ("PGCONNECT_TIMEOUT", "100")
+        , ("PGCLIENTENCODING" , "something")
+        , ("PGOPTIONS"        , "options")
+        , ("PGAPPNAME"        , "da app")
+        , ("PGKEEPALIVES"     , "1")
+        , ("PGKEEPALIVESIDLE" , "2")
+        , ("PGKEEPALIVESCOUNT", "3")
+        , ("PGSSLMODE"        , "on")
+        , ("PGREQUIRESSL"     , "1")
+        , ("PGSSLCOMPRESSION" , "0")
+        , ("PGSSLCERT"        , "ca.cert")
+        , ("PGSSLKEY"         , "fda.key")
+        , ("PGSSLROOTCERT"    , "root.cert")
+        , ("PGREQUIREPEER"    , "yes")
+        , ("PGKRBSRVNAME"     , "blah")
+        , ("PGGSSLIB"         , "foo")
+        , ("PGSERVICE"        , "bar")
+        ]
+
+      let expected = PartialOptions
+            { host                    = pure "localhost"
+            , hostaddr                = pure "127.0.0.1"
+            , port                    = pure 1234
+            , user                    = pure "postgres"
+            , password                = pure "postgres"
+            , dbname                  = pure "temp1"
+            , connectTimeout          = pure 100
+            , clientEncoding          = pure "something"
+            , options                 = pure "options"
+            , fallbackApplicationName = pure "da app"
+            , keepalives              = pure 1
+            , keepalivesIdle          = pure 2
+            , keepalivesCount         = pure 3
+            , sslmode                 = pure "on"
+            , requiressl              = pure 1
+            , sslcompression          = pure 0
+            , sslcert                 = pure "ca.cert"
+            , sslkey                  = pure "fda.key"
+            , sslrootcert             = pure "root.cert"
+            , requirepeer             = pure "yes"
+            , krbsrvname              = pure "blah"
+            , gsslib                  = pure "foo"
+            , service                 = pure "bar"
+            }
+
+      E.decode `shouldReturn` Just expected
+
+    it "adds to the environment all options" $ do
+      let intial = PartialOptions
+            { host                    = pure "localhost"
+            , hostaddr                = pure "127.0.0.1"
+            , port                    = pure 1234
+            , user                    = pure "postgres"
+            , password                = pure "postgres"
+            , dbname                  = pure "temp1"
+            , connectTimeout          = pure 100
+            , clientEncoding          = pure "something"
+            , options                 = pure "options"
+            , fallbackApplicationName = pure "da app"
+            , keepalives              = pure 1
+            , keepalivesIdle          = pure 2
+            , keepalivesCount         = pure 3
+            , sslmode                 = pure "on"
+            , requiressl              = pure 1
+            , sslcompression          = pure 0
+            , sslcert                 = pure "ca.cert"
+            , sslkey                  = pure "fda.key"
+            , sslrootcert             = pure "root.cert"
+            , requirepeer             = pure "yes"
+            , krbsrvname              = pure "blah"
+            , gsslib                  = pure "foo"
+            , service                 = pure "bar"
+            }
+      mapM_ (unsetEnv . fst) =<< getEnvironment
+
+      E.setEnvironment' intial `shouldReturn` Right ()
+
+      let expected = Map.fromList
+            [ ("PGHOST"           , "localhost")
+            , ("PGHOSTADDR"       , "127.0.0.1")
+            , ("PGPORT"           , "1234")
+            , ("PGUSER"           , "postgres")
+            , ("PGPASSWORD"       , "postgres")
+            , ("PGDATABASE"       , "temp1")
+            , ("PGCONNECT_TIMEOUT", "100")
+            , ("PGCLIENTENCODING" , "something")
+            , ("PGOPTIONS"        , "options")
+            , ("PGAPPNAME"        , "da app")
+            , ("PGKEEPALIVES"     , "1")
+            , ("PGKEEPALIVESIDLE" , "2")
+            , ("PGKEEPALIVESCOUNT", "3")
+            , ("PGSSLMODE"        , "on")
+            , ("PGREQUIRESSL"     , "1")
+            , ("PGSSLCOMPRESSION" , "0")
+            , ("PGSSLCERT"        , "ca.cert")
+            , ("PGSSLKEY"         , "fda.key")
+            , ("PGSSLROOTCERT"    , "root.cert")
+            , ("PGREQUIREPEER"    , "yes")
+            , ("PGKRBSRVNAME"     , "blah")
+            , ("PGGSSLIB"         , "foo")
+            , ("PGSERVICE"        , "bar")
+            ]
+
+      fmap Map.fromList getEnvironment `shouldReturn` expected
+
+
+
   describe "Options Parser" $ do
     it "parses all options" $ do
       let testArgs = [ "--host=example.com"

@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Database.PostgreSQL.Simple.PartialOptions
+  exposed-modules: Database.PostgreSQL.Simple.PartialOptions
+                 , Database.PostgreSQL.Simple.PartialOptions.Internal
   build-depends: base >= 4.6 && < 5
                , postgresql-simple
                , optparse-applicative
@@ -37,6 +38,7 @@ test-suite postgresql-simple-opts-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
+                     , containers
                      , postgresql-simple-opts
                      , hspec
                      , postgresql-simple
