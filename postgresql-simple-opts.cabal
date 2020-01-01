@@ -1,7 +1,7 @@
 name:                postgresql-simple-opts
 version:             0.6.0.0
 synopsis:            An optparse-applicative and envy parser for postgres options
-description:         This package exports a optparse-applicative and envy parser and type for postgresql-simple's Options and connection string.
+description:         An optparse-applicative and envy parser for postgres options. See README.md
 homepage:            https://github.com/jfischoff/postgresql-simple-opts#readme
 license:             BSD3
 license-file:        LICENSE
