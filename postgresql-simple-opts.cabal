@@ -27,8 +27,8 @@ library
                , split
                , uri-bytestring
                , generic-deriving
-               , postgres-options >= 0.1.0.1
-               , envy < 2.0.0.0
+               , postgres-options >= 0.2.0.0
+               , envy
   default-language:    Haskell2010
   ghc-options: -Wall
                -fno-warn-unused-do-bind
@@ -39,6 +39,7 @@ test-suite postgresql-simple-opts-test
   main-is:             Spec.hs
   build-depends:       base
                      , containers
+                     , envy
                      , postgresql-simple-opts
                      , hspec
                      , postgresql-simple

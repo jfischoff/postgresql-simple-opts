@@ -14,12 +14,13 @@ import qualified Data.ByteString.Char8 as BSC
 import Data.Char (isUpper, toLower)
 import Data.Default (Default(..))
 import qualified Data.Either.Validation as DEV
-import Data.Either.Validation (Validation(..), validationToEither)
+import Data.Either.Validation (Validation(..))
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Typeable (Typeable)
 import Database.PostgreSQL.Simple (ConnectInfo(..), Connection, connectPostgreSQL, defaultConnectInfo)
-import Database.PostgreSQL.Simple.Options (Options(..), toConnectionString)
+import qualified Database.PostgreSQL.Simple.Options as O
+import Database.PostgreSQL.Simple.Options(Options)
 import GHC.Generics (Generic)
 import Generics.Deriving.Monoid (Last(..), gmappenddefault, gmemptydefault)
 import Options.Applicative (Parser, (<|>), eitherReader, long, option)
@@ -57,7 +58,7 @@ data PartialOptions = PartialOptions
   } deriving (Show, Eq, Read, Ord, Generic, Typeable)
 
 instance FromEnv PartialOptions where
-  fromEnv
+  fromEnv _
       = PartialOptions
     <$> env "PGHOST"
     <*> env "PGHOSTADDR"
@@ -165,31 +166,33 @@ getOption optionName = \case
 getLast' :: Applicative f => Last a -> f (Maybe a)
 getLast' = pure . getLast
 
+-- This is pointless.
 completeOptions :: PartialOptions -> Either [String] Options
-completeOptions PartialOptions {..} = validationToEither $
-  Options <$> getLast' host
-          <*> getLast' hostaddr
-          <*> (fmap fromIntegral <$> getLast' port)
-          <*> getLast' user
-          <*> getLast' password
-          <*> getOption "dbname" dbname
-          <*> getLast' connectTimeout
-          <*> getLast' clientEncoding
-          <*> getLast' options
-          <*> getLast' fallbackApplicationName
-          <*> getLast' keepalives
-          <*> getLast' keepalivesIdle
-          <*> getLast' keepalivesCount
-          <*> getLast' sslmode
-          <*> getLast' requiressl
-          <*> getLast' sslcompression
-          <*> getLast' sslcert
-          <*> getLast' sslkey
-          <*> getLast' sslrootcert
-          <*> getLast' requirepeer
-          <*> getLast' krbsrvname
-          <*> getLast' gsslib
-          <*> getLast' service
+completeOptions PartialOptions {..} = pure $
+  O.Options host
+            hostaddr
+            (fromIntegral <$> port)
+            user
+            password
+            dbname
+            connectTimeout
+            clientEncoding
+            options
+            fallbackApplicationName
+            keepalives
+            keepalivesIdle
+            keepalivesCount
+            sslmode
+            requiressl
+            sslcompression
+            sslcert
+            sslkey
+            sslrootcert
+            requirepeer
+            krbsrvname
+            gsslib
+            service
+
 
 -- | Useful for testing or if only Options are needed.
 completeParser :: Parser Options
@@ -198,7 +201,7 @@ completeParser =
 
 -- | Create a connection with an 'Option'
 run :: Options -> IO Connection
-run = connectPostgreSQL . toConnectionString
+run = connectPostgreSQL . O.toConnectionString
 
 userInfoToPartialOptions :: UserInfo -> PartialOptions
 userInfoToPartialOptions UserInfo {..} = mempty { user = return $ BSC.unpack uiUsername } <> if BS.null uiPassword

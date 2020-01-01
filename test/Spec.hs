@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 import Test.Hspec
 import Database.PostgreSQL.Simple.PartialOptions
-import Database.PostgreSQL.Simple.Options
+import qualified Database.PostgreSQL.Simple.Options as O
 import System.Environment
 import Options.Applicative
 import System.Exit
@@ -9,7 +9,7 @@ import Data.Default
 import qualified System.Envy as E
 import qualified Data.Map as Map
 
-testParser :: IO Options
+testParser :: IO O.Options
 testParser = execParser $ info completeParser mempty
 
 main :: IO ()
@@ -244,6 +244,3 @@ main = hspec $ do
           { host = return "/var/lib/postgresql"
           , dbname = return "dbname"
           })
-
-
-
