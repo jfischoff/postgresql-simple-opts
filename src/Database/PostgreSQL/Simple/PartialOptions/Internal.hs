@@ -1,7 +1,6 @@
 {-| A resuable optparse-applicative parser for creating a postgresql-simple
    'Connection'
 -}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE RecordWildCards, LambdaCase, DeriveGeneric, DeriveDataTypeable #-}
 {-# LANGUAGE CPP, GADTs, OverloadedStrings, StandaloneDeriving, GeneralizedNewtypeDeriving #-}
 
@@ -110,8 +109,6 @@ instance ToEnv PartialOptions where
     , "PGGSSLIB"          .= gsslib
     , "PGSERVICE"         .= service
     ]
-
-deriving instance (Var a, Typeable a) => Var (Last a)
 
 instance DefConfig PartialOptions where
   defConfig = mempty

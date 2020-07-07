@@ -1,5 +1,5 @@
 name:                postgresql-simple-opts
-version:             0.6.0.0
+version:             0.6.0.1
 synopsis:            An optparse-applicative and envy parser for postgres options
 description:         An optparse-applicative and envy parser for postgres options. See README.md
 homepage:            https://github.com/jfischoff/postgresql-simple-opts#readme
@@ -31,7 +31,7 @@ library
                , uri-bytestring
                , generic-deriving
                , postgres-options >= 0.2.0.0
-               , envy
+               , envy >= 2.1.0.0
   default-language:    Haskell2010
   ghc-options: -Wall
                -fno-warn-unused-do-bind
